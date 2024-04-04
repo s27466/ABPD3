@@ -6,21 +6,7 @@ namespace LegacyApp
     {
         public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
         {
-            if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
-            {
-                return false;
-            }
-
-            if (!email.Contains("@") && !email.Contains("."))
-            {
-                return false;
-            }
-
-            var now = DateTime.Now;
-            int age = now.Year - dateOfBirth.Year;
-            if (now.Month < dateOfBirth.Month || (now.Month == dateOfBirth.Month && now.Day < dateOfBirth.Day)) age--;
-
-            if (age < 21)
+            if (!IsValid(firstName, lastName, email, dateOfBirth))
             {
                 return false;
             }
@@ -28,15 +14,20 @@ namespace LegacyApp
             var clientRepository = new ClientRepository();
             var client = clientRepository.GetById(clientId);
 
-            var user = new User
+            var user = CreateUser(firstName, lastName, email, dateOfBirth, client);
+            setCreditLimit(user,client);
+
+            if (!IsUserCreditValid(user))
             {
-                Client = client,
-                DateOfBirth = dateOfBirth,
-                EmailAddress = email,
-                FirstName = firstName,
-                LastName = lastName
-            };
-            
+                return false;
+            }
+
+            UserDataAccess.AddUser(user);
+            return true;
+        }
+
+        private void setCreditLimit(User user, Client client)
+        {
             if (client.Type == "VeryImportantClient")
             {
                 user.HasCreditLimit = false;
@@ -59,13 +50,51 @@ namespace LegacyApp
                     user.CreditLimit = creditLimit;
                 }
             }
-            
+        }
+        
+        private bool IsUserCreditValid(User user)
+        {
             if (user.HasCreditLimit && user.CreditLimit < 500)
             {
                 return false;
             }
 
-            UserDataAccess.AddUser(user);
+            return true;
+        }
+
+        private User CreateUser(string firstName, string lastName, string email, DateTime dateOfBirth, Client client)
+        {
+            return new User
+            {
+                Client = client,
+                DateOfBirth = dateOfBirth,
+                EmailAddress = email,
+                FirstName = firstName,
+                LastName = lastName
+            };
+        }
+
+        private bool IsValid(string firstName, string lastName, string email, DateTime dateOfBirth)
+        {
+            if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
+            {
+                return false;
+            }
+
+            if (!email.Contains("@") && !email.Contains("."))
+            {
+                return false;
+            }
+
+            var now = DateTime.Now;
+            int age = now.Year - dateOfBirth.Year;
+            if (now.Month < dateOfBirth.Month || (now.Month == dateOfBirth.Month && now.Day < dateOfBirth.Day)) age--;
+
+            if (age < 21)
+            {
+                return false;
+            }
+
             return true;
         }
     }
