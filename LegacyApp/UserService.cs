@@ -26,7 +26,7 @@ namespace LegacyApp
             return true;
         }
 
-        private void setCreditLimit(User user, Client client)
+        private void SetCreditLimit(User user, Client client)
         {
             if (client.Type == "VeryImportantClient")
             {
